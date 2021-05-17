@@ -3,22 +3,16 @@ from PyQt5 import QtWidgets, uic
 
 import socket
 
-# class Connect:
-#
-#     sock = socket.socket()
-#     sock.connect(('localhost', 8888))
-#
-#     def conv(data1):
-#         return data1.encode('utf-8')
-#
-#     def deconv(data1):
-#         return data1.decode('utf-8')
-#
-#     while True:
-#         a = input()
-#         sock.send(b'' + conv(a))
-#         data = sock.recv(1024)
-#         print(deconv(data))
+def conv(data1):
+    return data1.encode('utf-8')
+def deconv(data1):
+    return data1.decode('utf-8')
+
+sock = socket.socket()
+sock.connect(('localhost', 8888))
+sock.send(b'' + conv("Connect"))
+data = sock.recv(1024)
+print(deconv(data))
 
 class Window(QtWidgets.QMainWindow):
 
@@ -33,15 +27,24 @@ class Window(QtWidgets.QMainWindow):
 
     def Login(self):
 
-        #запрос серверу о логине и пароле
+         #запрос серверу о логине и пароле
         #если логин и пароль правильный, то статус успешно
+        sock.send(b'' + conv("LOGIN "+self.ui.login.text()+" "+self.ui.password.text()))
+        data = sock.recv(1024)
+        data=deconv(data)
 
-        if (self.ui.login.text() == '111' and self.ui.password.text() == '222'):
-              QtWidgets.QMessageBox.information(self, 'Статус','Успешно!')
-              self.MainWindow()
-
+        if (int(data)==1):
+            QtWidgets.QMessageBox.information(self, 'Статус', 'Успешно!')
+            self.MainWindow()
         else:
-             QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Неверный логин или пароль')
+            QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Неверный логин или пароль')
+
+        # if (self.ui.login.text() == '111' and self.ui.password.text() == '222'):
+        #       QtWidgets.QMessageBox.information(self, 'Статус','Успешно!')
+        #       self.MainWindow()
+        #
+        # else:
+        #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Неверный логин или пароль')
 
     def Registration(self):
 
@@ -69,12 +72,18 @@ class Window(QtWidgets.QMainWindow):
         # запрос передачи данных серверу newpassword = rPASSWORD
         # запрос передачи данных серверу newemail = rEMAIL
 
-        QtWidgets.QMessageBox.information(self,'Статус','Вы зарегистрировались!')
+        l=self.addlogin.text()
+        p=self.addpassword.text()
+        sock.send(b'' + conv("REGISTER " + l + " " + p))
+        data = sock.recv(1024)
+        data = deconv(data)
+
+        if (int(data) == 1):
+            QtWidgets.QMessageBox.information(self,'Статус','Вы зарегистрировались!')
+
 
         #else:
         #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Соединение с сервером не установлено!')
-
-
 
     def MainWindow(self):
 
