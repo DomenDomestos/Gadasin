@@ -1,6 +1,5 @@
 import sys
 from PyQt5 import QtWidgets, uic
-
 import socket
 
 def conv(data1):
@@ -13,6 +12,24 @@ sock.connect(('localhost', 8888))
 sock.send(b'' + conv("Connect"))
 data = sock.recv(1024)
 print(deconv(data))
+
+DATAS=[]
+
+def conv_datas_into_h_a_z(N):
+    s1 = DATAS[N].split(' ')
+    s1 = s1[2:]
+    znach = []
+    hours = []
+    anoms = []
+    count1 = 0
+    for i in s1:
+        i = i[1:-1]
+        i = i.split('-')
+        hours.append(int(count1))
+        znach.append(float(i[0]))
+        anoms.append(float(i[1]))
+        count1 += 1
+    return hours, znach, anoms
 
 class Window(QtWidgets.QMainWindow):
 
@@ -27,7 +44,7 @@ class Window(QtWidgets.QMainWindow):
 
     def Login(self):
 
-         #запрос серверу о логине и пароле
+        #запрос серверу о логине и пароле
         #если логин и пароль правильный, то статус успешно
         sock.send(b'' + conv("LOGIN "+self.ui.login.text()+" "+self.ui.password.text()))
         data = sock.recv(1024)
@@ -50,12 +67,9 @@ class Window(QtWidgets.QMainWindow):
 
         self.ui = uic.loadUi('registrationwindow.ui', self)
         self.ui.addpassword.setEchoMode(QtWidgets.QLineEdit.Password)
-        newlogin = self.addlogin.text()
-        newpassword = self.addpassword.text()
-        newemail = self.addemail.text()
         self.ui.newregistration.clicked.connect(self.addUser)
         self.ui.relogin.clicked.connect(self.ReLogin)
-
+        # newemail = self.addemail.text()
 
     def ReLogin(self):
 
@@ -64,6 +78,7 @@ class Window(QtWidgets.QMainWindow):
 
         self.ui.ok.clicked.connect(self.Login)
         self.ui.registration.clicked.connect(self.Registration)
+
 
     def addUser(self):
 
@@ -85,6 +100,7 @@ class Window(QtWidgets.QMainWindow):
         #else:
         #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Соединение с сервером не установлено!')
 
+
     def MainWindow(self):
 
 
@@ -98,14 +114,24 @@ class Window(QtWidgets.QMainWindow):
         self.ui.diagnostic.clicked.connect(self.StartDiagnistic)
         self.ui.setsampling.clicked.connect(self.Sampling)
 
+        sock.send(b'' + conv("get all"))
+        data = sock.recv(1024)
+        data=deconv(data)
+        data=data[2:-3]
+        global DATAS
+        DATAS = data.split('\', \'')
+
+        #получить часы, значения и аномалии нулевой записи
+        h, z, a = conv_datas_into_h_a_z(0)
+        # print(data)
         # если соединение с сервером установлено, то
         # DATA получить данные с сервера о температуре установленного периода
         # тут должен быть файл-таблица с аномальными данными!
-        data = open('text.txt')
-        self.adataview.addItems(data)
+        # data = open('text.txt')
+        self.adataview.addItems(DATAS)
 
         #надо написать алгоритм считывания с файла (часы,температура) для plot
-        self.plot([1,2,3,4,5,6,7,8,9,10], [30,32,34,32,33,31,29,32,35,45])
+        self.plot(h,z)
 
         # else:
         #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Соединение с сервером не установлено!')
