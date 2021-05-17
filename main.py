@@ -140,22 +140,63 @@ class Window(QtWidgets.QMainWindow):
 
         # если соединение с сервером установлено, то
 
-        data = open('text.txt')
+        # data = open('text.txt')
 
-        start = self.startperiod.text
-        end = self.endperiod.text
+        start = self.startperiod.date().toString("yyyy-MM-dd")
+        end = self.endperiod.date().toString("yyyy-MM-dd")
+
+        alltimes=[]
+        startu=-1
+        endu=-1
+        for i in DATAS:
+            alltimes.append(i.split(' ')[:1][0])
+        bark=0
+        for i in alltimes:
+            print(str(start)+" "+str(i))
+            if (str(start)==str(i)):
+                startu=bark
+            if (str(end)==str(i)):
+                endu=bark
+                break
+            bark+=1
+
+        # print(alltimes)
+        # print(str(start))
+        # print(startu)
+
 
         if self.ui.setsensorperiod.clicked.connect:
 
             # надо написать алгоритм считывания с файла определенного периода с start до end
 
-            self.adataview.clear()
-            self.adataview.addItems(data)
+            H=[]
+            Z=[]
+            A=[]
+            z1=-1
+            if (startu!=-1):
+                if (endu==-1):
+                    z1=len(DATAS)-startu
+                else:
+                    z1=endu-startu
+            cou=0
+            for i in range(z1):
+                # print(i)
+                h, z, a = conv_datas_into_h_a_z(i)
+                for j in range(len(h)):
+                    H.append(cou)
+                    Z.append(z[j])
+                    A.append(a[j])
+                    cou+=1
+
+
+            # print(Z)
+            # self.adataview.clear()
+            # self.adataview.addItems(data)
 
             # надо написать алгоритм считывания с файла (часы,температура) для plot
-            self.plot([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [30, 32, 34, 32, 33, 31, 29, 32, 35, 45])
+            self.plot(H, Z)
 
-            QtWidgets.QMessageBox.information(self, 'Статус','Новый период установлен!')
+            # QtWidgets.QMessageBox.information(self, 'Статус','Новый период установлен!')
 
 
         # else:
@@ -194,6 +235,7 @@ class Window(QtWidgets.QMainWindow):
         #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Соединение с сервером не установлено!')
 
     def plot(self, hour, temperature):
+        self.GraphWidget.clear()
         self.GraphWidget.plot(hour, temperature)
 
 if __name__ == '__main__':
