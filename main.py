@@ -17,6 +17,7 @@ DATAS=[]
 
 def conv_datas_into_h_a_z(N):
     s1 = DATAS[N].split(' ')
+    # print(s1)
     s1 = s1[2:]
     znach = []
     hours = []
@@ -114,12 +115,25 @@ class Window(QtWidgets.QMainWindow):
         self.ui.diagnostic.clicked.connect(self.StartDiagnistic)
         self.ui.setsampling.clicked.connect(self.Sampling)
 
-        sock.send(b'' + conv("get all"))
-        data = sock.recv(1024)
-        data=deconv(data)
-        data=data[2:-3]
+        sock.send(b'' + conv("get start"))
+        ddd=''
+        data = sock.recv(4096)
+        data = deconv(data)
+
+        ddd=ddd+data
+        while (True):
+            data = sock.recv(4096)
+            exits=False
+            if (len(data)<4096):
+                exits=True
+            data = deconv(data)
+            ddd = ddd + data
+            if (exits==True):
+                break
+
+        ddd = ddd[2:-3]
         global DATAS
-        DATAS = data.split('\', \'')
+        DATAS = ddd.split('\', \'')
 
         #получить часы, значения и аномалии нулевой записи
         h, z, a = conv_datas_into_h_a_z(0)
@@ -152,7 +166,7 @@ class Window(QtWidgets.QMainWindow):
             alltimes.append(i.split(' ')[:1][0])
         bark=0
         for i in alltimes:
-            print(str(start)+" "+str(i))
+            # print(str(start)+" "+str(i))
             if (str(start)==str(i)):
                 startu=bark
             if (str(end)==str(i)):
@@ -225,7 +239,11 @@ class Window(QtWidgets.QMainWindow):
         # если соединение с сервером установлено, то
         # тут должен быть файл с информации о диагностике!
 
-        data = open('Diagnostic.txt',encoding='utf-8')
+        # data = open('Diagnostic.txt',encoding='utf-8')
+        data=''
+        sock.send(b'' + conv("CONFIG"))
+        data = sock.recv(1024)
+        data = deconv(data).split('\n')
 
         self.adataview.clear()
         self.adataview.addItems(data)
