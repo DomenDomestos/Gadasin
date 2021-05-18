@@ -1,6 +1,8 @@
 import sys
 from PyQt5 import QtWidgets, uic
 import socket
+import threading
+import time
 
 def conv(data1):
     return data1.encode('utf-8')
@@ -16,8 +18,18 @@ print(deconv(data))
 DATAS=[]
 
 def conv_datas_into_h_a_z(N):
-    s1 = DATAS[N].split(' ')
-    # print(s1)
+    sock.send(b'' + conv("get day "+str(N)))
+    ddd=""
+    while (True):
+        data = sock.recv(4096)
+        exits=False
+        if (len(data)<4096):
+            exits=True
+        data = deconv(data)
+        ddd = ddd + data
+        if (exits==True):
+            break
+    s1 = ddd.split(' ')
     s1 = s1[2:]
     znach = []
     hours = []
@@ -31,6 +43,24 @@ def conv_datas_into_h_a_z(N):
         anoms.append(float(i[1]))
         count1 += 1
     return hours, znach, anoms
+
+STOPPER=True
+Day=[]
+def refresh():
+    sock.send(b'' + conv("get now"))
+    data = sock.recv(1024)
+    data = deconv(data)
+    global Day
+    Day=data.split(' ')
+    Day=Day[1:]
+    for i in range(len(Day)):
+        Day[i]=Day[i][1:-1]
+
+    if STOPPER==False:
+        thread = threading.Timer(1, refresh)
+        thread.start()
+
+
 
 class Window(QtWidgets.QMainWindow):
 
@@ -115,25 +145,15 @@ class Window(QtWidgets.QMainWindow):
         self.ui.diagnostic.clicked.connect(self.StartDiagnistic)
         self.ui.setsampling.clicked.connect(self.Sampling)
 
-        sock.send(b'' + conv("get start"))
-        ddd=''
+        sock.send(b'' + conv("get allday"))
         data = sock.recv(4096)
         data = deconv(data)
-
-        ddd=ddd+data
-        while (True):
-            data = sock.recv(4096)
-            exits=False
-            if (len(data)<4096):
-                exits=True
-            data = deconv(data)
-            ddd = ddd + data
-            if (exits==True):
-                break
-
-        ddd = ddd[2:-3]
         global DATAS
-        DATAS = ddd.split('\', \'')
+        DATAS = data.split(' ')
+        DATAS=DATAS[:-1]
+        Da=[]
+        for i in range(len(DATAS)):
+            Da.append(str(i)+"|   "+DATAS[i])
 
         #получить часы, значения и аномалии нулевой записи
         h, z, a = conv_datas_into_h_a_z(0)
@@ -142,13 +162,18 @@ class Window(QtWidgets.QMainWindow):
         # DATA получить данные с сервера о температуре установленного периода
         # тут должен быть файл-таблица с аномальными данными!
         # data = open('text.txt')
-        self.adataview.addItems(DATAS)
-
+        self.adataview.addItems(Da)
+        self.ui.adataview.itemClicked.connect(self.click_to_item)
         #надо написать алгоритм считывания с файла (часы,температура) для plot
         self.plot(h,z)
 
         # else:
         #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Соединение с сервером не установлено!')
+    def click_to_item(self, item):
+        s=item.text().split('|')
+        s=s[0]
+        h, z, a = conv_datas_into_h_a_z(int(s))
+        self.plot(h, z)
 
     def SetSensorPeriod(self):
 
@@ -216,21 +241,50 @@ class Window(QtWidgets.QMainWindow):
         # else:
         #      QtWidgets.QMessageBox.warning(self, 'Ошибка', 'Соединение с сервером не установлено!')
 
+    def refresh2(self):
+        global Day
+        H = []
+        Z = []
+        A = []
+        cou = 0
+        for i in Day:
+            i = i.split('-')
+            H.append(cou)
+            cou += 1
+            Z.append(float(i[0]))
+            A.append(float(i[1]))
+        self.plot(H, Z)
+        if STOPPER == False:
+            thread1 = threading.Timer(1, self.refresh2)
+            thread1.start()
+            print("1")
+
+
     def Sampling(self):
 
-        sampling = self.sampling.text()
-        data = open('text.txt')
+        global STOPPER
+        if STOPPER==True:
+            STOPPER=False
+        else:
+            STOPPER=True
+        refresh()
+
+
+
+        self.refresh2()
+        # sampling = self.sampling.text()
+        # data = open('text.txt')
 
         # надо написать алгоритм считывания с файла заданной дискретизацией
 
 
-        if self.ui.setsampling.clicked.connect:
-
-
-            self.adataview.clear()
-            self.adataview.addItems(data)
-
-            QtWidgets.QMessageBox.information(self, 'Статус', 'Новый интервал считывания установлен!')
+        # if self.ui.setsampling.clicked.connect:
+        #
+        #
+        #     self.adataview.clear()
+        #     self.adataview.addItems(data)
+        #
+        #     QtWidgets.QMessageBox.information(self, 'Статус', 'Новый интервал считывания установлен!')
 
 
     def StartDiagnistic(self):
